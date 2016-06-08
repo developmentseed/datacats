@@ -764,7 +764,7 @@ class Environment(object):
                 '/run/test.ini:/project/ckan/test-core.ini:ro'] +
             link_params +
             ['--hostname', self.name,
-            'datacats/web', '/scripts/shell.sh'] + command)
+            'datacats/shell', '/scripts/shell.sh'] + command)
 
     def install_package_requirements(self, psrc, stream_output=None):
         """
