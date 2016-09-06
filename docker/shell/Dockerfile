@@ -1,6 +1,7 @@
 FROM datacats/web
 
 # Get tippecanoe
+RUN apt-get update
 RUN apt-get install -y libprotobuf-dev protobuf-compiler libsqlite3-dev && git clone https://github.com/mapbox/tippecanoe.git && cd tippecanoe && make && make install
 
 ## Get NodeJS (from docker/node)
