@@ -1,10 +1,44 @@
-FROM datacats/web
+FROM ubuntu:14.04
 
-# Get tippecanoe
-RUN apt-get update
-RUN apt-get install -y libprotobuf-dev protobuf-compiler libsqlite3-dev && git clone https://github.com/mapbox/tippecanoe.git && cd tippecanoe && make && make install
+MAINTAINER developmentseed
 
-## Get NodeJS (from docker/node)
+RUN locale-gen en_US.UTF-8 && \
+echo 'LANG="en_US.UTF-8"' > /etc/default/locale
+
+USER root
+
+# Get dependencies for mapnik
+RUN apt-get -q -y update && apt-get install -y software-properties-common
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN apt-get update -y && apt-get install -y libstdc++-5-dev
+
+#Install the packages we need
+RUN apt-get -q -y update
+RUN DEBIAN_FRONTEND=noninteractive apt-get -q -y install \
+        python-minimal \
+        python-dev \
+        python-virtualenv \
+        libpq-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        wget \
+        postfix \
+        build-essential \
+        git-core \
+        libgeos-dev \
+        libmysqlclient-dev \
+        libcurl4-openssl-dev \
+        libldap2-dev \
+        libsasl2-dev \
+        libssl-dev \
+        gdal-bin \
+	libgdal-dev \
+        libprotobuf-dev \
+	protobuf-compiler \
+	libsqlite3-dev \
+        curl
+
+RUN git clone https://github.com/mapbox/tippecanoe.git && cd tippecanoe && make && make install
 
 # gpg keys listed at https://github.com/nodejs/node
 RUN set -ex \
@@ -15,23 +49,21 @@ RUN set -ex \
     FD3A5288F042B6850C66B31F09FE44734EB7990E \
     71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
     DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+    B9AE9905FFD7803F25714661B63B535A4C206CA9 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
   ; do \
     gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
   done
 
 ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 5.2.0
+ENV NODE_VERSION 5.12.0
 
-RUN apt-get install -y curl && \
-  curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.gz" \
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
   && curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
-  && gpg --verify SHASUMS256.txt.asc \
-  && grep " node-v$NODE_VERSION-linux-x64.tar.gz\$" SHASUMS256.txt.asc | sha256sum -c - \
-  && tar -xzf "node-v$NODE_VERSION-linux-x64.tar.gz" -C /usr/local --strip-components=1 \
-  && rm "node-v$NODE_VERSION-linux-x64.tar.gz" SHASUMS256.txt.asc
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+  && rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
-# Get mapbox-tile-copy
 RUN npm install -g mapbox-tile-copy
-
-
-
